@@ -138,7 +138,7 @@ if check_password():
     df_main = fetch_data(SHEET_ID, "Bedsure_2025_Q4")
     df_analysis = fetch_data(SHEET_ID, "Comment_Analysis")
 
-   with st.sidebar:
+with st.sidebar:
         # 1. 顯示 Logo
         if os.path.exists("Queue Logo-01 transp.png"): 
             st.image("Queue Logo-01 transp.png", use_container_width=True)

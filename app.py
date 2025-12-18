@@ -4,9 +4,9 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import urllib.parse
+import urllib.request
 
 # --- 0. 環境修復與 Favicon 設置 ---
-# 修復 SSL 報錯 (macOS 必備)
 try:
     _create_unverified_https_context = ssl._create_unverified_context
 except AttributeError:
@@ -24,91 +24,78 @@ FAVICON_FILE = "QueueFava.png"
 p_icon = FAVICON_FILE if os.path.exists(FAVICON_FILE) else "📊"
 
 st.set_page_config(
-    page_title="Queue | Bedsure Portal", 
-    layout="wide", 
+    page_title="Queue | Bedsure Portal",
+    layout="wide",
     page_icon=p_icon
 )
 
 # --- 1. 全域視覺樣式 (CSS) ---
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Oswald:wght@600;700&display=swap');
-    
-    /* 移除頂部空白 */
-    [data-testid="stAppViewBlockContainer"] { padding-top: 1.5rem !important; }
-    html, body, [class*="css"] { font-family: 'Lato', sans-serif; }
-    h1, h2, h3, .client-title, [data-testid="stMetricLabel"] p { 
-        font-family: 'Oswald', sans-serif !important; 
-        text-transform: uppercase; 
-        letter-spacing: 1px;
-    }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Oswald:wght@600;700&display=swap');
 
-    /* Logo 禁用圓角 */
-    img { border-radius: 0px !important; }
+[data-testid="stAppViewBlockContainer"] { padding-top: 1.5rem !important; }
+html, body, [class*="css"] { font-family: 'Lato', sans-serif; }
+h1, h2, h3, .client-title, [data-testid="stMetricLabel"] p {
+    font-family: 'Oswald', sans-serif !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
-    /* Header Flexbox: 確保 Logo 與標題完美對齊 */
-    .custom-header {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 25px;
-    }
-    .custom-header img { width: 75px; height: auto; }
-    .custom-header h2 { margin: 0 !important; font-size: 28px; line-height: 1.2; }
+img { border-radius: 0px !important; }
 
-    /* Project Overview 卡片 */
-    .overview-card {
-        background-color: #F8F9FA;
-        padding: 20px;
-        border: 1px solid #EEEEEE;
-        margin-bottom: 20px;
-    }
-    .brief-btn {
-        display: inline-block;
-        background-color: #000000;
-        color: #FFFFFF !important;
-        padding: 8px 18px;
-        text-decoration: none;
-        font-family: 'Oswald';
-        font-size: 13px;
-        margin-top: 10px;
-    }
+.custom-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+.custom-header img { width: 75px; height: auto; }
+.custom-header h2 { margin: 0 !important; font-size: 28px; line-height: 1.2; }
 
-    /* 登錄頁按鈕 */
-    .stButton>button { 
-        background-color: #FFFFFF !important; 
-        color: #000000 !important; 
-        font-family: 'Oswald' !important; 
-        font-weight: 700 !important; 
-        border-radius: 2px !important;
-        width: 100% !important;
-    }
-    
-    /* 評論卡片 */
-    .insight-card {
-        background-color: #FFFFFF;
-        padding: 15px;
-        border-left: 4px solid #1D1D1F;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    </style>
-    """, unsafe_allow_html=True)
+.overview-card {
+    background-color: #F8F9FA;
+    padding: 20px;
+    border: 1px solid #EEEEEE;
+    height: 100%;
+}
+.brief-btn {
+    display: inline-block;
+    background-color: #000000;
+    color: #FFFFFF !important;
+    padding: 8px 18px;
+    text-decoration: none;
+    font-family: 'Oswald';
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.stButton>button {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+    font-family: 'Oswald' !important;
+    font-weight: 700 !important;
+    border-radius: 2px !important;
+    width: 100% !important;
+}
+
+.insight-card {
+    background-color: #FFFFFF;
+    padding: 15px;
+    border-left: 4px solid #1D1D1F;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+</style>
+""", unsafe_allow_html=True)
 
 # --- 2. 數據獲取與驗證 ---
 @st.cache_data(ttl=60)
-# --- 數據獲取函數 (SSL 強制修復版) ---
-@st.cache_data(ttl=60)
 def fetch_data(sid, sname):
     try:
-        # 建立一個忽略 SSL 驗證的 context
         context = ssl._create_unverified_context()
-        
-        # 編碼分頁名稱並組合 URL
         encoded_name = urllib.parse.quote(sname)
         url = f"https://docs.google.com/spreadsheets/d/{sid}/export?format=csv&sheet={encoded_name}"
-        
-        # 使用 urllib 開啟連結並傳入 SSL context，最後交給 pandas 讀取
         with urllib.request.urlopen(url, context=context) as response:
             df = pd.read_csv(response)
             df.columns = df.columns.astype(str).str.strip()
@@ -130,42 +117,39 @@ def check_password():
             if pwd == ACCESS_PASSWORD:
                 st.session_state["password_correct"] = True
                 st.rerun()
-            else: st.error("INVALID CODE")
+            else:
+                st.error("INVALID CODE")
     return False
 
 # --- 3. 頁面內容 ---
 if check_password():
+    # 讀取數據
     df_main = fetch_data(SHEET_ID, "Bedsure_2025_Q4")
     df_analysis = fetch_data(SHEET_ID, "Comment_Analysis")
 
-with st.sidebar:
-        # 1. 顯示 Logo
+    # 側邊欄配置
+    with st.sidebar:
         if os.path.exists("Queue Logo-01 transp.png"): 
             st.image("Queue Logo-01 transp.png", use_container_width=True)
-        
-        st.divider() # 分隔線
-        
-        # 2. 顯示品牌資訊
+        st.divider()
         st.markdown("<p style='font-family:Oswald; font-size:11px; color:#888;'>PRESENTED BY</p><p style='font-family:Oswald; font-weight:700; font-size:18px;'>QUEUE AGENCY</p>", unsafe_allow_html=True)
         
-        # 3. 刷新數據按鈕
+        # 🚀 刷新按鈕
         if st.button("🔄 REFRESH DATA"):
-            st.cache_data.clear()# 強制清除緩存
-            st.rerun()# 立即重新整理頁面
+            st.cache_data.clear()
+            st.rerun()
             
         st.divider()
-        
-        # 4. 登出按鈕 (選填)
         if st.button("LOGOUT"):
             st.session_state["password_correct"] = False
             st.rerun()
 
-    # --- Header (Flexbox 對齊) ---
-st.markdown(f"""
-        <div class="custom-header">
-            <img src="https://bedsurehome.com/cdn/shop/files/5_c54d3500-9a81-483d-b507-6ae336e6ba90.png?v=1746503863&width=1500">
-            <h2>Bedsure Influencer Performance</h2>
-        </div>
+    # --- Header ---
+    st.markdown(f"""
+    <div class="custom-header">
+    <img src="https://bedsurehome.com/cdn/shop/files/5_c54d3500-9a81-483d-b507-6ae336e6ba90.png?v=1746503863&width=1500">
+    <h2>Bedsure Influencer Performance</h2>
+    </div>
     """, unsafe_allow_html=True)
 
     # --- Project Overview 區塊 ---
@@ -174,9 +158,9 @@ st.markdown(f"""
     with ov1:
         st.markdown(f"""
         <div class="overview-card">
-            <p style="font-family:Oswald; font-size:12px; color:#888; margin:0;">CAMPAIGN FOCUS</p>
-            <p style="margin:5px 0;"><b>Bedsure Winter 2025: GentleSoft™ Comfort</b><br>推廣 GentleSoft™ 毯子，提升品牌在冬季居家市場的質感與互動。</p>
-            <a href="{BRIEF_URL}" target="_blank" class="brief-btn">OPEN CREATOR BRIEF</a>
+        <p style="font-family:Oswald; font-size:12px; color:#888; margin:0;">CAMPAIGN FOCUS</p>
+        <p style="margin:5px 0;"><b>Bedsure Winter 2025: GentleSoft™ Comfort</b><br>推廣 GentleSoft™ 毯子，提升品牌在冬季居家市場的質感與互動。</p>
+        <a href="{BRIEF_URL}" target="_blank" class="brief-btn">OPEN CREATOR BRIEF</a>
         </div>
         """, unsafe_allow_html=True)
     with ov2:
@@ -190,7 +174,7 @@ st.markdown(f"""
         for c in ['Views', 'Cost', 'Likes', 'Comments', 'Shares', 'Saves']:
             if c in df_main.columns:
                 df_main[c] = pd.to_numeric(df_main[c].astype(str).str.replace(',', '').str.replace('$', '').str.strip(), errors='coerce').fillna(0)
-        
+
         v = df_main['Views'].sum()
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("TOTAL REACH", f"{v:,.0f}")
@@ -212,7 +196,7 @@ st.markdown(f"""
                     all_tags = []
                     for row in df_analysis['Keywords'].dropna():
                         all_tags.extend([t.strip().title() for t in str(row).split(',') if t.strip()])
-                    
+
                     if all_tags:
                         tag_counts = pd.Series(all_tags).value_counts().reset_index()
                         tag_counts.columns = ['Topic', 'Mentions']

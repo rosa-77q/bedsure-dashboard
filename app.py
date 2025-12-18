@@ -177,10 +177,10 @@ if check_password():
 
         v = df_main['Views'].sum()
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("TOTAL REACH", f"{v:,.0f}")
+        m1.metric("TOTAL VIEWS", f"{v:,.0f}")
         m2.metric("TOTAL SPEND", f"${df_main['Cost'].sum():,.0f}")
         m3.metric("ENGAGEMENT", f"{(df_main[['Likes','Comments','Shares','Saves']].sum().sum()/v*100) if v>0 else 0:.2f}%")
-        m4.metric("CREATORS", len(df_main['Influencer'].unique()))
+        m4.metric("CONTENT", len(df_main['Influencer'].unique()))
 
         st.divider()
         tab1, tab2 = st.tabs(["PERFORMANCE DATA", "COMMENT SUMMARY"])

@@ -138,10 +138,24 @@ if check_password():
     df_main = fetch_data(SHEET_ID, "Bedsure_2025_Q4")
     df_analysis = fetch_data(SHEET_ID, "Comment_Analysis")
 
-    with st.sidebar:
-        if os.path.exists("Queue Logo-01 transp.png"): st.image("Queue Logo-01 transp.png", use_container_width=True)
-        st.divider()
+   with st.sidebar:
+        # 1. 顯示 Logo
+        if os.path.exists("Queue Logo-01 transp.png"): 
+            st.image("Queue Logo-01 transp.png", use_container_width=True)
+        
+        st.divider() # 分隔線
+        
+        # 2. 顯示品牌資訊
         st.markdown("<p style='font-family:Oswald; font-size:11px; color:#888;'>PRESENTED BY</p><p style='font-family:Oswald; font-weight:700; font-size:18px;'>QUEUE AGENCY</p>", unsafe_allow_html=True)
+        
+        # 3. 刷新數據按鈕
+        if st.button("🔄 REFRESH DATA"):
+            st.cache_data.clear()  # 強制清除緩存
+            st.rerun()             # 立即重新整理頁面
+            
+        st.divider()
+        
+        # 4. 登出按鈕 (選填)
         if st.button("LOGOUT"):
             st.session_state["password_correct"] = False
             st.rerun()

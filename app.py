@@ -161,7 +161,7 @@ with st.sidebar:
             st.rerun()
 
     # --- Header (Flexbox 對齊) ---
-    st.markdown(f"""
+st.markdown(f"""
         <div class="custom-header">
             <img src="https://bedsurehome.com/cdn/shop/files/5_c54d3500-9a81-483d-b507-6ae336e6ba90.png?v=1746503863&width=1500">
             <h2>Bedsure Influencer Performance</h2>

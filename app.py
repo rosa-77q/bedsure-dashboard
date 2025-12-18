@@ -150,8 +150,8 @@ if check_password():
         
         # 3. 刷新數據按鈕
         if st.button("🔄 REFRESH DATA"):
-            st.cache_data.clear()  # 強制清除緩存
-            st.rerun()             # 立即重新整理頁面
+            st.cache_data.clear()# 強制清除緩存
+            st.rerun()# 立即重新整理頁面
             
         st.divider()
         

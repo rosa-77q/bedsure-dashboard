@@ -95,46 +95,88 @@ def render_performance_view(df, key_suffix=""):
         st.info("NO DATA AVAILABLE")
         return
     
+    # --- 1. 核心數據計算 ---
     total_views = df['Views'].sum()
-    total_imps = df['Est_Impressions'].sum()
-    total_eng = df[['Likes','Comments','Shares','Saves']].sum().sum()
-
+    total_imps = df['Est_Impressions'].sum() # 確保 fetch_data 裡有計算這個欄位
+    
+    total_likes = df['Likes'].sum()
+    total_comments = df['Comments'].sum()
+    total_shares = df['Shares'].sum()
+    total_saves = df['Saves'].sum()
+    total_eng = total_likes + total_comments + total_shares + total_saves
+    
     df['Influencer'] = df['Influencer'].astype(str).str.strip()
-    df_fin = df.groupby('Influencer').agg({'Views': 'sum', 'Cost': 'max'}).reset_index()
+    
+    # 聚合每位 Creator 的數據
+    df_fin = df.groupby('Influencer').agg({
+        'Views': 'sum', 
+        'Cost': 'max', 
+        'Likes': 'sum', 
+        'Comments': 'sum', 
+        'Shares': 'sum', 
+        'Saves': 'sum',
+        'Est_Impressions': 'sum'
+    }).reset_index()
+    
+    df_fin['Total_Eng'] = df_fin['Likes'] + df_fin['Comments'] + df_fin['Shares'] + df_fin['Saves']
+    df_fin['Eng_Rate'] = (df_fin['Total_Eng'] / df_fin['Views'] * 100).fillna(0)
+    df_fin['CPM'] = (df_fin['Cost'] / df_fin['Views']) * 1000
     
     total_cost = df_fin['Cost'].sum()
     real_cpm = (total_cost / total_views * 1000) if total_views > 0 else 0
-    eng_rate = (total_eng / total_views * 100) if total_views > 0 else 0
+    avg_eng_rate = (total_eng / total_views * 100) if total_views > 0 else 0
     
+    # --- 2. 頂部數據指標 (已將 TOTAL ENGAGEMENT 改為 EST. IMPRESSIONS) ---
     m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("EST. IMPRESSIONS", f"{total_imps:,.0f}")
-    m2.metric("REACH (VIEWS)", f"{total_views:,.0f}")
-    m3.metric("AVG. CPM", f"${real_cpm:.2f}")
-    m4.metric("ENGAGEMENT", f"{eng_rate:.2f}%")
+    m1.metric("REACH (VIEWS)", f"{total_views:,.0f}")
+    m2.metric("EST. IMPRESSIONS", f"{total_imps:,.0f}") # 這裡更新了
+    m3.metric("AVG. ENG. RATE", f"{avg_eng_rate:.2f}%")
+    m4.metric("AVG. CPM", f"${real_cpm:.2f}")
     m5.metric("POSTS", len(df))
 
-    c1, c2 = st.columns(2)
+    # --- 3. 第一排：規模 vs 效率 (Views & CPM) ---
+    st.write("<br>", unsafe_allow_html=True)
+    c1, c2 = st.columns([3, 2])
+    
     with c1:
         st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>VIEWS BREAKDOWN BY PLATFORM</p>", unsafe_allow_html=True)
-        sort_order = df.groupby('Influencer')['Views'].sum().sort_values(ascending=False).index
-        fig_v = px.bar(
-            df, x='Influencer', y='Views', color='Platform', 
-            template="plotly_white", 
-            color_discrete_sequence=['#3d0204', '#7a0000', '#b87b7b'],
-            category_orders={"Influencer": list(sort_order)}
-        )
-        fig_v.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        sort_order_v = df_fin.sort_values('Views', ascending=False)['Influencer'].tolist()
+        fig_v = px.bar(df, x='Influencer', y='Views', color='Platform', template="plotly_white", 
+                     color_discrete_sequence=['#3d0204', '#7a0000', '#b87b7b'],
+                     category_orders={"Influencer": sort_order_v})
+        fig_v.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), height=400)
         st.plotly_chart(fig_v, use_container_width=True, key=f"v_{key_suffix}")
-        
+
     with c2:
         st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>EFFICIENCY (CPM RANKING)</p>", unsafe_allow_html=True)
-        df_fin['CPM'] = (df_fin['Cost'] / df_fin['Views']) * 1000
-        df_cpm = df_fin[df_fin['Views'] > 0].sort_values('CPM')
-        fig_c = px.bar(
-            df_cpm, x='CPM', y='Influencer', orientation='h',
-            template="plotly_white", color_discrete_sequence=['#ba7070']
-        )
+        df_cpm_rank = df_fin[df_fin['Views'] > 0].sort_values('CPM', ascending=False)
+        fig_c = px.bar(df_cpm_rank, x='CPM', y='Influencer', orientation='h', 
+                     template="plotly_white", color_discrete_sequence=['#ba7070'],
+                     text_auto='.2f')
+        fig_c.update_layout(height=400, xaxis_title="CPM (USD)", yaxis_title="")
         st.plotly_chart(fig_c, use_container_width=True, key=f"c_{key_suffix}")
+
+    # --- 4. 第二排：質量分析 (ER% & Donut) ---
+    st.write("<br>", unsafe_allow_html=True)
+    c3, c4 = st.columns([3, 2])
+    
+    with c3:
+        st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>CREATOR ENGAGEMENT RATE RANKING (%)</p>", unsafe_allow_html=True)
+        df_eng_rank = df_fin.sort_values('Eng_Rate', ascending=True)
+        fig_e = px.bar(df_eng_rank, x='Eng_Rate', y='Influencer', orientation='h', 
+                     template="plotly_white", color_discrete_sequence=['#911f1f'],
+                     text_auto='.2f')
+        fig_e.update_layout(height=400, xaxis_title="Eng. Rate (%)", yaxis_title="")
+        st.plotly_chart(fig_e, use_container_width=True, key=f"e_{key_suffix}")
+
+    with c4:
+        st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>ENGAGEMENT BEHAVIOR ANALYSIS</p>", unsafe_allow_html=True)
+        pie_df = pd.DataFrame({"Metric": ["Likes", "Saves", "Comments", "Shares"],
+                              "Value": [total_likes, total_saves, total_comments, total_shares]})
+        fig_p = px.pie(pie_df, names='Metric', values='Value', hole=0.6, template="plotly_white", 
+                     color_discrete_sequence=['#3d0204', '#5e0b0b', '#800000', '#a52a2a'])
+        fig_p.update_layout(margin=dict(t=30, b=0, l=0, r=0), height=350)
+        st.plotly_chart(fig_p, use_container_width=True, key=f"p_{key_suffix}")
 
     st.dataframe(df, use_container_width=True)
 

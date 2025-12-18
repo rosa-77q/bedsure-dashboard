@@ -89,12 +89,12 @@ def render_performance_view(df):
         st.info("NO DATA AVAILABLE")
         return
     
-    # 邏輯：流量全加總
+    # 1. 流量全累計 (Reach/Impressions)
     total_views = df['Views'].sum()
     total_imps = df['Est_Impressions'].sum()
     total_eng = df[['Likes','Comments','Shares','Saves']].sum().sum()
 
-    # 邏輯：達人去重計算成本 (Package Deal)
+    # 2. 財務去重計算 (Cost/CPM)
     df['Influencer'] = df['Influencer'].astype(str).str.strip()
     df_fin = df.groupby('Influencer').agg({'Views': 'sum', 'Cost': 'max'}).reset_index()
     
@@ -102,6 +102,7 @@ def render_performance_view(df):
     real_cpm = (total_cost / total_views * 1000) if total_views > 0 else 0
     eng_rate = (total_eng / total_views * 100) if total_views > 0 else 0
     
+    # 指標列
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("EST. IMPRESSIONS", f"{total_imps:,.0f}")
     m2.metric("REACH (VIEWS)", f"{total_views:,.0f}")
@@ -111,12 +112,34 @@ def render_performance_view(df):
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>TOTAL VIEWS BY CREATOR</p>", unsafe_allow_html=True)
-        st.plotly_chart(px.bar(df_fin.sort_values('Views', ascending=False), x='Influencer', y='Views', template="plotly_white", color_discrete_sequence=['#1D1D1F']), use_container_width=True)
+        st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>VIEWS BREAKDOWN BY PLATFORM</p>", unsafe_allow_html=True)
+        # 🚀 修改點：使用原始 df 並加入 color='Platform' 實現 Stacked Bar
+        # 先按 Influencer 總量排序，確保圖表美觀
+        sort_order = df.groupby('Influencer')['Views'].sum().sort_values(ascending=False).index
+        fig_v = px.bar(
+            df, 
+            x='Influencer', 
+            y='Views', 
+            color='Platform', # 分平台顯示
+            template="plotly_white", 
+            color_discrete_sequence=['#1D1D1F', '#86868B', '#E5E5E5'], # 灰黑系列配色
+            category_orders={"Influencer": list(sort_order)}
+        )
+        fig_v.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        st.plotly_chart(fig_v, use_container_width=True)
+        
     with c2:
         st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>EFFICIENCY (CPM RANKING)</p>", unsafe_allow_html=True)
         df_fin['CPM'] = (df_fin['Cost'] / df_fin['Views']) * 1000
-        fig_c = px.bar(df_fin[df_fin['Views']>0].sort_values('CPM'), x='CPM', y='Influencer', orientation='h', template="plotly_white", color_discrete_sequence=['#86868B'])
+        df_cpm = df_fin[df_fin['Views'] > 0].sort_values('CPM')
+        fig_c = px.bar(
+            df_cpm, 
+            x='CPM', 
+            y='Influencer', 
+            orientation='h', 
+            template="plotly_white", 
+            color_discrete_sequence=['#1D1D1F']
+        )
         st.plotly_chart(fig_c, use_container_width=True)
 
     st.dataframe(df, use_container_width=True)

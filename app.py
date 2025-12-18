@@ -26,7 +26,7 @@ p_icon = FAVICON_FILE if os.path.exists(FAVICON_FILE) else "📊"
 
 st.set_page_config(page_title="Queue | Bedsure Portal", layout="wide", page_icon=p_icon)
 
-# --- 1. 全域視覺樣式 (CSS) ---
+# --- 1. 全域視覺樣式 (CSS) - 原始設計完全不動 ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Oswald:wght@600;700&display=swap');
@@ -69,32 +69,36 @@ def fetch_data(sid, sname):
         with urllib.request.urlopen(url, context=context) as response:
             df = pd.read_csv(response)
             df.columns = df.columns.astype(str).str.strip()
-            for c in ['Views', 'Cost', 'Likes', 'Comments', 'Shares', 'Saves']:
-                if c in df.columns:
-                    df[c] = pd.to_numeric(df[c].astype(str).str.replace(',', '').str.replace('$', '').str.replace(' ', ''), errors='coerce').fillna(0)
             
-            def calc_imps(row):
-                v = row.get('Views', 0)
-                plat = str(row.get('Platform', '')).upper()
-                if 'TIKTOK' in plat: return v * 1.12
-                if 'INS' in plat or 'INSTAGRAM' in plat: return v * 1.15
-                return v * 1.10
-            df['Est_Impressions'] = df.apply(calc_imps, axis=1)
+            # 只有在處理 performance 數據時才進行轉換
+            if "Bedsure" in sname:
+                for c in ['Views', 'Cost', 'Likes', 'Comments', 'Shares', 'Saves']:
+                    if c in df.columns:
+                        df[c] = pd.to_numeric(df[c].astype(str).str.replace(',', '').str.replace('$', '').str.replace(' ', ''), errors='coerce').fillna(0)
+                
+                def calc_imps(row):
+                    v = row.get('Views', 0)
+                    plat = str(row.get('Platform', '')).upper()
+                    if 'TIKTOK' in plat: return v * 1.12
+                    if 'INS' in plat or 'INSTAGRAM' in plat: return v * 1.15
+                    return v * 1.10
+                df['Est_Impressions'] = df.apply(calc_imps, axis=1)
+                # 預處理 Tier 確保過濾成功
+                if 'Tier' in df.columns:
+                    df['Tier'] = df['Tier'].astype(str).str.strip().str.upper()
             return df
-    except Exception as e:
+    except Exception:
         return None
 
-def render_performance_view(df):
+def render_performance_view(df, key_suffix=""):
     if df is None or df.empty:
         st.info("NO DATA AVAILABLE")
         return
     
-    # 1. 流量全累計 (Reach/Impressions)
     total_views = df['Views'].sum()
     total_imps = df['Est_Impressions'].sum()
     total_eng = df[['Likes','Comments','Shares','Saves']].sum().sum()
 
-    # 2. 財務去重計算 (Cost/CPM)
     df['Influencer'] = df['Influencer'].astype(str).str.strip()
     df_fin = df.groupby('Influencer').agg({'Views': 'sum', 'Cost': 'max'}).reset_index()
     
@@ -102,7 +106,6 @@ def render_performance_view(df):
     real_cpm = (total_cost / total_views * 1000) if total_views > 0 else 0
     eng_rate = (total_eng / total_views * 100) if total_views > 0 else 0
     
-    # 指標列
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("EST. IMPRESSIONS", f"{total_imps:,.0f}")
     m2.metric("REACH (VIEWS)", f"{total_views:,.0f}")
@@ -113,38 +116,29 @@ def render_performance_view(df):
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>VIEWS BREAKDOWN BY PLATFORM</p>", unsafe_allow_html=True)
-        # 🚀 修改點：使用原始 df 並加入 color='Platform' 實現 Stacked Bar
-        # 先按 Influencer 總量排序，確保圖表美觀
         sort_order = df.groupby('Influencer')['Views'].sum().sort_values(ascending=False).index
         fig_v = px.bar(
-            df, 
-            x='Influencer', 
-            y='Views', 
-            color='Platform', # 分平台顯示
+            df, x='Influencer', y='Views', color='Platform', 
             template="plotly_white", 
-            color_discrete_sequence=['#1D1D1F', '#86868B', '#E5E5E5'], # 灰黑系列配色
+            color_discrete_sequence=['#3d0204', '#7a0000', '#b87b7b'],
             category_orders={"Influencer": list(sort_order)}
         )
         fig_v.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-        st.plotly_chart(fig_v, use_container_width=True)
+        st.plotly_chart(fig_v, use_container_width=True, key=f"v_{key_suffix}")
         
     with c2:
         st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>EFFICIENCY (CPM RANKING)</p>", unsafe_allow_html=True)
         df_fin['CPM'] = (df_fin['Cost'] / df_fin['Views']) * 1000
         df_cpm = df_fin[df_fin['Views'] > 0].sort_values('CPM')
         fig_c = px.bar(
-            df_cpm, 
-            x='CPM', 
-            y='Influencer', 
-            orientation='h', 
-            template="plotly_white", 
-            color_discrete_sequence=['#1D1D1F']
+            df_cpm, x='CPM', y='Influencer', orientation='h',
+            template="plotly_white", color_discrete_sequence=['#ba7070']
         )
-        st.plotly_chart(fig_c, use_container_width=True)
+        st.plotly_chart(fig_c, use_container_width=True, key=f"c_{key_suffix}")
 
     st.dataframe(df, use_container_width=True)
 
-# --- 3. 登錄與側邊欄邏輯 ---
+# --- 3. 登錄與側邊欄邏輯 (完全保留原始結構) ---
 def check_password():
     if st.session_state.get("password_correct", False): return True
     st.markdown("<style>.stApp { background-color: #000000 !important; }</style>", unsafe_allow_html=True)
@@ -162,8 +156,8 @@ def check_password():
 
 if check_password():
     df_main = fetch_data(SHEET_ID, "Bedsure_2025_Q4")
+    df_comments = fetch_data(SHEET_ID, "Comment Summary") # 讀取正確的 tab
     
-    # 側邊欄：保留原本左右功能
     with st.sidebar:
         if os.path.exists("Queue Logo-01 transp.png"): 
             st.image("Queue Logo-01 transp.png", use_container_width=True)
@@ -186,15 +180,50 @@ if check_password():
     with o3: st.markdown('<div class="overview-card" style="text-align:center;"><p style="font-size:11px; color:#888; margin:0;">CORE PRODUCT</p><p style="font-size:18px; font-weight:700; margin-top:5px;">GentleSoft</p></div>', unsafe_allow_html=True)
 
     st.write("<br>", unsafe_allow_html=True)
-    tp, pg = st.tabs(["PERFORMANCE DATA", "CAMPAIGN PROGRESS"])
+    # PERFORMANCE DATA 放在第一，並加入 COMMENT INSIGHTS
+    tp, ci, pg = st.tabs(["PERFORMANCE DATA", "COMMENT INSIGHTS", "CAMPAIGN PROGRESS"])
 
     with tp:
         if df_main is not None:
-            stabs = st.tabs(["ALL", "NANO & MICRO", "MID-TIER", "MACRO & MEGA"])
-            with stabs[0]: render_performance_view(df_main)
-            with stabs[1]: render_performance_view(df_main[df_main['Tier'].str.upper().isin(['NANO', 'MICRO'])])
-            with stabs[2]: render_performance_view(df_main[df_main['Tier'].str.upper() == 'MID-TIER'])
-            with stabs[3]: render_performance_view(df_main[df_main['Tier'].str.upper().isin(['MACRO', 'MEGA'])])
+            # 這是你的四個 Tab
+            stabs = st.tabs(["ALL", "NANO & MICRO", "MID-TIER & MACRO", "MEGA"])
+            
+            with stabs[0]: 
+                render_performance_view(df_main, "all")
+            
+            with stabs[1]: 
+                # 只要內容包含 "NANO" 或 "MICRO" (不論大小寫) 都能抓到
+                mask_nm = df_main['Tier'].astype(str).str.upper().str.contains('NANO|MICRO', na=False)
+                render_performance_view(df_main[mask_nm], "nm")
+            
+            with stabs[2]: 
+                # 只要內容包含 "MID" 或 "MACRO" (相容 MID-TIER, MIDTIER 等)
+                mask_mm = df_main['Tier'].astype(str).str.upper().str.contains('MID|MACRO', na=False)
+                render_performance_view(df_main[mask_mm], "mm")
+            
+            with stabs[3]: 
+                # 只要內容包含 "MEGA"
+                mask_mega = df_main['Tier'].astype(str).str.upper().str.contains('MEGA', na=False)
+                render_performance_view(df_main[mask_mega], "mega")
+
+    with ci:
+        st.markdown("### AUDIENCE RECEPTION")
+        if df_comments is not None:
+            for idx, row in df_comments.iterrows():
+                # 使用 .get 解決 KeyError
+                sentiment = str(row.get('Sentiment', 'Neutral'))
+                st.markdown(f"""
+                <div class="insight-card">
+                    <p style="font-family:Oswald; font-size:16px; margin-bottom:5px; color:#1D1D1F;">{row.get('Creator', 'Unknown')}</p>
+                    <p style="font-size:13px; color:#666; margin-bottom:2px;">
+                        <b>Keywords:</b> {row.get('Keywords', '-')} &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <b>Sentiment:</b> {sentiment}
+                    </p>
+                    <p style="font-size:14px; margin-top:8px; line-height:1.4;">{row.get('Highlights', '-')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("NO DATA IN 'Comment Summary'")
 
     with pg:
         st.markdown("### EXECUTION EFFICIENCY")
@@ -202,11 +231,11 @@ if check_password():
         with cf:
             st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>CONVERSION FUNNEL</p>", unsafe_allow_html=True)
             fig_f = go.Figure(go.Funnel(y=["Screened", "Reached", "Negotiated", "Confirmed", "Dropped"], x=[469, 265, 106, 16, 28], marker={"color": ["#E5E5E5", "#CCCCCC", "#999999", "#1D1D1F", "#FF4B4B"]}))
-            st.plotly_chart(fig_f, use_container_width=True)
+            st.plotly_chart(fig_f, use_container_width=True, key="f_pg")
         with ct:
             st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>WORKLOAD BY TIER</p>", unsafe_allow_html=True)
             tdf = pd.DataFrame({"Tier":["Nano","Micro","Mid","Macro","Mega"],"S":[85,132,75,118,59],"R":[73,77,53,47,34],"C":[7,1,2,1,5]})
-            st.plotly_chart(px.bar(tdf, x="Tier", y=["S","R","C"], barmode='group', template="plotly_white", color_discrete_sequence=["#E5E5E5", "#999999", "#1D1D1F"]), use_container_width=True)
+            st.plotly_chart(px.bar(tdf, x="Tier", y=["S","R","C"], barmode='group', template="plotly_white", color_discrete_sequence=["#E5E5E5", "#999999", "#1D1D1F"]), use_container_width=True, key="w_pg")
         st.markdown("<div class='insight-card'><b>Summary:</b> Queue Agency Team screened 469 creators, converting 16 high-quality partnerships.</div>", unsafe_allow_html=True)
 
     # 渲染圖片水印

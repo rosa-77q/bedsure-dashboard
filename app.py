@@ -134,8 +134,8 @@ if check_password():
         st.divider()
         st.markdown("<p style='font-family:Oswald; font-size:11px; color:#888;'>PRESENTED BY</p><p style='font-family:Oswald; font-weight:700; font-size:18px;'>QUEUE AGENCY</p>", unsafe_allow_html=True)
         
-        # 🚀 刷新按鈕
-        if st.button("🔄 REFRESH DATA"):
+        #  刷新按鈕
+        if st.button("REFRESH DATA"):
             st.cache_data.clear()
             st.rerun()
             
@@ -183,10 +183,10 @@ if check_password():
         m4.metric("CREATORS", len(df_main['Influencer'].unique()))
 
         st.divider()
-        tab1, tab2 = st.tabs(["📊 PERFORMANCE DATA", "💬 COMMENT SUMMARY"])
+        tab1, tab2 = st.tabs(["PERFORMANCE DATA", "COMMENT SUMMARY"])
 
         with tab1:
-            fig = px.bar(df_main.sort_values('Views', ascending=False), x='Influencer', y='Views', color='Platform', template="plotly_white", color_discrete_sequence=['#1D1D1F', '#424245', '#86868B'])
+            fig = px.bar(df_main.sort_values('Views', ascending=False), x='Influencer', y='Views', color='Platform', template="plotly_white", color_discrete_sequence=['#969696', '#424245', '#590000'])
             st.plotly_chart(fig, use_container_width=True)
             st.dataframe(df_main, use_container_width=True)
 

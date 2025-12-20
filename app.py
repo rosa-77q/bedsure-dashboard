@@ -197,6 +197,13 @@ def check_password():
     with c2:
         st.write("<br><br><br>", unsafe_allow_html=True)
         if os.path.exists("Queue Logo.png"): st.image("Queue Logo.png", width=140)
+        st.markdown("""
+            <div style="margin-top: -10px; margin-bottom: 30px;">
+                <p style="font-family: 'Oswald', sans-serif; color: #FFFFFF; font-size: 20px; letter-spacing: 4px; font-weight: 300; opacity: 0.8;">
+                    CLIENT PORTAL
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
         pwd = st.text_input("PASSWORD", type="password", label_visibility="collapsed")
         if st.button("ACCESS DASHBOARD"):
             if pwd == ACCESS_PASSWORD:
@@ -260,13 +267,14 @@ if check_password():
 
     st.write("<br>", unsafe_allow_html=True)
     
-    # 主要分頁標籤
+  # --- 主要分頁標籤 ---
     tp, ci, pg = st.tabs(["PERFORMANCE DATA", "COMMENT INSIGHTS", "CAMPAIGN PROGRESS"])
 
     with tp:
         if df_main is not None:
             stabs = st.tabs(["ALL", "NANO & MICRO", "MID-TIER & MACRO", "MEGA"])
-            with stabs[0]: render_performance_view(df_main, "all")
+            with stabs[0]: 
+                render_performance_view(df_main, "all")
             with stabs[1]: 
                 mask_nm = df_main['Tier'].astype(str).str.upper().str.contains('NANO|MICRO', na=False)
                 render_performance_view(df_main[mask_nm], "nm")
@@ -277,84 +285,67 @@ if check_password():
                 mask_mega = df_main['Tier'].astype(str).str.upper().str.contains('MEGA', na=False)
                 render_performance_view(df_main[mask_mega], "mega")
 
-with ci:
-    st.markdown("### AUDIENCE RECEPTION ANALYSIS")
-    
-    if df_comments is not None and not df_comments.empty:
-        # --- 核心修復：徹底清洗欄位名稱 ---
-        df_comments.columns = [str(c).strip() for c in df_comments.columns]
+    with ci:
+        st.markdown("### AUDIENCE RECEPTION ANALYSIS")
         
-        # 定義我們需要的關鍵欄位名稱
-        # 這樣即便 Sheet 裡寫的是 "sentiment" (小寫)，也能正常運作
-        col_map = {c.lower(): c for c in df_comments.columns}
-        
-        # 檢查 Sentiment 是否存在 (不論大小寫)
-        target_col = None
-        if 'sentiment' in col_map:
-            target_col = col_map['sentiment']
+        if df_comments is not None and not df_comments.empty:
+            df_comments.columns = [str(c).strip() for c in df_comments.columns]
+            col_map = {c.lower(): c for c in df_comments.columns}
+            target_col = col_map.get('sentiment')
 
-        # --- 1. 量化分析區域 ---
-        if target_col:
-            sentiment_counts = df_comments[target_col].value_counts().reset_index()
-            sentiment_counts.columns = ['Sentiment', 'Count']
-            
-            c_top1, c_top2 = st.columns([2, 3])
-            
-            with c_top1:
-                st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>SENTIMENT DISTRIBUTION</p>", unsafe_allow_html=True)
-                fig_sent = px.pie(sentiment_counts, names='Sentiment', values='Count', hole=0.7,
-                                 template="plotly_white",
-                                 color='Sentiment',
-                                 color_discrete_map={'Positive': '#a86d6d', 'Neutral': '#CCCCCC', 'Negative': '#1D1D1F'})
-                fig_sent.update_layout(margin=dict(t=0, b=0, l=0, r=10), height=250, showlegend=True)
-                st.plotly_chart(fig_sent, use_container_width=True, key="sent_pie_final")
+            if target_col:
+                c_top1, c_top2 = st.columns([2, 3])
+                
+                with c_top1:
+                    st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>SENTIMENT DISTRIBUTION</p>", unsafe_allow_html=True)
+                    fig_sent = px.pie(df_comments, names=target_col, hole=0.7,
+                                     template="plotly_white",
+                                     color=target_col,
+                                     color_discrete_map={
+                                         'Positive': '#a86d6d', 
+                                         'Neutral': '#DDDDDD', 
+                                         'Negative': '#1D1D1F'
+                                     })
+                    fig_sent.update_layout(margin=dict(t=0, b=0, l=0, r=10), height=250, showlegend=True)
+                    st.plotly_chart(fig_sent, use_container_width=True, key="sent_chart_new")
 
-            with c_top2:
-                # 關鍵詞矩形圖 (同樣加入安全檢查)
-                kw_col = col_map.get('keywords')
-                if kw_col:
-                    st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>TOP MENTIONED KEYWORDS</p>", unsafe_allow_html=True)
-                    all_kw = df_comments[kw_col].astype(str).str.split(',').explode().str.strip().value_counts().reset_index()
-                    all_kw.columns = ['Keyword', 'Count']
-                    all_kw = all_kw[all_kw['Keyword'] != 'nan']
-                    
-                    fig_tree = px.treemap(all_kw.head(12), path=['Keyword'], values='Count',
-                                         color_discrete_sequence=['#F8F9FA'],
-                                         template="plotly_white")
-                    fig_tree.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250)
-                    st.plotly_chart(fig_tree, use_container_width=True, key="kw_tree_final")
+                with c_top2:
+                    kw_col = col_map.get('keywords')
+                    if kw_col:
+                        st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>TOP MENTIONED KEYWORDS</p>", unsafe_allow_html=True)
+                        all_kw = df_comments[kw_col].astype(str).str.split(',').explode().str.strip().value_counts().reset_index()
+                        all_kw.columns = ['Keyword', 'Count']
+                        fig_tree = px.treemap(all_kw.head(12), path=['Keyword'], values='Count',
+                                             template="plotly_white",
+                                             color_discrete_sequence=['#F8F9FA'])
+                        fig_tree.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250)
+                        st.plotly_chart(fig_tree, use_container_width=True, key="kw_tree_new")
+
+                st.divider()
+
+                st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>TOP CREATOR HIGHLIGHTS</p>", unsafe_allow_html=True)
+                card_cols = st.columns(3)
+                for i, (idx, row) in enumerate(df_comments.iterrows()):
+                    with card_cols[i % 3]:
+                        c_name = row.get(col_map.get('creator', ''), 'Unknown')
+                        c_sent_val = str(row.get(target_col, 'Neutral')).strip()
+                        c_key = row.get(col_map.get('keywords', ''), '-')
+                        c_high = row.get(col_map.get('highlights', ''), '-')
+                        
+                        s_color = "#a86d6d" if c_sent_val.capitalize() == "Positive" else "#1D1D1F" if c_sent_val.capitalize() == "Negative" else "#CCCCCC"
+                        
+                        st.markdown(f"""
+                        <div style="background-color:#FFFFFF; padding:15px; border:1px solid #EEE; border-top:4px solid {s_color}; margin-bottom:15px; height:240px; overflow:hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <p style="font-family:Oswald; font-size:14px; margin:0; color:#1D1D1F; font-weight:700; text-transform:uppercase;">{c_name}</p>
+                                <span style="font-size:9px; background:{s_color}; color:white; padding:2px 8px; border-radius:10px; font-family:Oswald;">{c_sent_val.upper()}</span>
+                            </div>
+                            <p style="font-size:10px; color:#a86d6d; margin-top:8px; font-family:Oswald; text-transform:uppercase; letter-spacing:1px;">{c_key}</p>
+                            <p style="font-size:13px; line-height:1.5; color:#444; font-style:italic; margin-top:10px; font-family:'Lato';">"{c_high}"</p>
+                        </div>
+                        """, unsafe_allow_html=True)
         else:
-            # 如果還是找不到，直接列出所有讀取到的欄位名稱，方便你排錯
-            st.error(f"Error: Could not find 'Sentiment' column. Found columns: {list(df_comments.columns)}")
-
-        st.divider()
-
-        # --- 2. 質化卡片展示 ---
-        st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>TOP CREATOR HIGHLIGHTS</p>", unsafe_allow_html=True)
-        
-        card_cols = st.columns(3)
-        for i, (idx, row) in enumerate(df_comments.iterrows()):
-            with card_cols[i % 3]:
-                # 使用 .get 確保找不到欄位時顯示 '-' 而不是報錯
-                c_name = row.get(col_map.get('creator', ''), 'Unknown')
-                c_sent = row.get(col_map.get('sentiment', ''), 'Neutral')
-                c_key = row.get(col_map.get('keywords', ''), '-')
-                c_high = row.get(col_map.get('highlights', ''), '-')
-                
-                s_color = "#a86d6d" if str(c_sent).strip().capitalize() == "Positive" else "#666"
-                
-                st.markdown(f"""
-                <div style="background-color:#FFFFFF; padding:15px; border:1px solid #EEE; border-top:4px solid {s_color}; margin-bottom:15px; height:240px; overflow:hidden;">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <p style="font-family:Oswald; font-size:14px; margin:0; color:#1D1D1F; font-weight:700;">{c_name}</p>
-                        <span style="font-size:9px; background:{s_color}; color:white; padding:2px 8px; border-radius:10px;">{c_sent}</span>
-                    </div>
-                    <p style="font-size:10px; color:#a86d6d; margin-top:8px; font-family:Oswald; text-transform:uppercase;">{c_key}</p>
-                    <p style="font-size:13px; line-height:1.5; color:#444; font-style:italic; margin-top:10px;">"{c_high}"</p>
-                </div>
-                """, unsafe_allow_html=True)
-    else:
-        st.info("NO DATA FOUND IN 'Comment Summary' TAB.")
+            st.info("NO DATA FOUND IN 'COMMENT SUMMARY' TAB.")
 
     with pg:
         st.markdown("### EXECUTION EFFICIENCY")
@@ -367,7 +358,7 @@ with ci:
                 marker={"color": ["#E5E5E5", "#CCCCCC", "#999999", "#1D1D1F", "#FF4B4B"]}
             ))
             fig_f.update_layout(margin=dict(l=20, r=20, t=20, b=20), height=400)
-            st.plotly_chart(fig_f, use_container_width=True, key="f_pg_final")
+            st.plotly_chart(fig_f, use_container_width=True, key="funnel_pg")
         
         with ct:
             st.markdown("<p style='font-family:Oswald; font-size:12px; color:#666;'>WORKLOAD BY TIER</p>", unsafe_allow_html=True)
@@ -380,11 +371,10 @@ with ci:
             fig_w = px.bar(tdf, x="Tier", y=["S","R","C"], barmode='group', template="plotly_white", 
                          color_discrete_sequence=["#E5E5E5", "#999999", "#1D1D1F"])
             fig_w.update_layout(margin=dict(l=20, r=20, t=20, b=20), height=400, showlegend=False)
-            st.plotly_chart(fig_w, use_container_width=True, key="w_pg_final")
+            st.plotly_chart(fig_w, use_container_width=True, key="workload_pg")
         
         st.markdown("<div class='insight-card'><b>Summary:</b> Queue Agency Team screened 469 creators, successfully converting 16 high-quality partnerships with efficient resource allocation.</div>", unsafe_allow_html=True)
-
-    # 水印
-    if os.path.exists("Queue Logo.png"):
-        with open("Queue Logo.png", "rb") as f: enc = base64.b64encode(f.read()).decode()
-        st.markdown(f'<img src="data:image/png;base64,{enc}" class="logo-watermark">', unsafe_allow_html=True)
+# 水印
+if os.path.exists("Queue Logo.png"):
+            with open("Queue Logo.png", "rb") as f: enc = base64.b64encode(f.read()).decode()
+            st.markdown(f'<img src="data:image/png;base64,{enc}" class="logo-watermark">', unsafe_allow_html=True)

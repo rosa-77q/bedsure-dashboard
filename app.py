@@ -553,116 +553,115 @@ if check_password():
             </style>
         """, unsafe_allow_html=True)
 
-    st.markdown("### EXECUTION EFFICIENCY & STRATEGIC PROJECTION")
+        st.markdown("### EXECUTION EFFICIENCY & STRATEGIC PROJECTION")
     
-    # --- 1. 变量初始化 (安全性保障) ---
-    orig_budget, act_spend, act_views, act_er, act_posts = 68000, 44000, 2368623, 0.0396, 31
-    act_cpm = (act_spend / act_views * 1000) if act_views > 0 else 0
-    act_eng = act_views * act_er
-    can_views, can_spend, can_eng, can_posts = 0, 0, 0, 0
-    total_views, total_spend, total_eng, total_posts = act_views, act_spend, act_eng, act_posts
-    comb_cpm, comb_er = act_cpm, act_er
-    view_completion_pct = (act_views / 3000000) * 100
+        # --- 1. 变量初始化 (安全性保障) ---
+        orig_budget, act_spend, act_views, act_er, act_posts = 68000, 44000, 2368623, 0.0396, 31
+        act_cpm = (act_spend / act_views * 1000) if act_views > 0 else 0
+        act_eng = act_views * act_er
+        can_views, can_spend, can_eng, can_posts = 0, 0, 0, 0
+        total_views, total_spend, total_eng, total_posts = act_views, act_spend, act_eng, act_posts
+        comb_cpm, comb_er = act_cpm, act_er
+        view_completion_pct = (act_views / 3000000) * 100
 
-    st.divider()
+        st.divider()
 
-    # --- 2. 顶部对齐的两栏布局 ---
-    cf, ct = st.columns(2, gap="large")
+        # --- 2. 顶部对齐的两栏布局 ---
+        cf, ct = st.columns(2, gap="large")
     
-    with cf:
-        # 统一标题与上边距
-        st.markdown("<p class='oswald-text' style='font-size:12px; color:#666; margin-bottom:24px;'><b>CAMPAIGN PROGRESS</b></p>", unsafe_allow_html=True)
+        with cf:
+            # 统一标题与上边距
+            st.markdown("<p class='oswald-text' style='font-size:12px; color:#666; margin-bottom:24px;'><b>CAMPAIGN PROGRESS</b></p>", unsafe_allow_html=True)
         
-        fig_f = go.Figure(go.Funnel(
-            y=["Screened", "Reached", "Negotiated", "Confirmed", "Dropped"], 
-            x=[469, 265, 106, 16, 28], 
-            marker={"color": ["#E5E5E5", "#CCCCCC", "#999999", "#1D1D1F", "#FF4B4B"]}
-        ))
-        fig_f.update_layout(margin=dict(l=10, r=40, t=10, b=10), height=300)
-        st.plotly_chart(fig_f, use_container_width=True, key="funnel_pg")
+            fig_f = go.Figure(go.Funnel(
+                y=["Screened", "Reached", "Negotiated", "Confirmed", "Dropped"], 
+                x=[469, 265, 106, 16, 28], 
+                marker={"color": ["#E5E5E5", "#CCCCCC", "#999999", "#1D1D1F", "#FF4B4B"]}
+            ))
+            fig_f.update_layout(margin=dict(l=10, r=40, t=10, b=10), height=300)
+            st.plotly_chart(fig_f, use_container_width=True, key="funnel_pg")
 
-        # 灰色背景 Summary
-        st.markdown(f"""
-            <div class="summary-card">
-                <b>Summary:</b> Queue Agency Team screened 469 creators, successfully converting 16 high-quality partnerships with efficient resource allocation.
-            </div>
-        """, unsafe_allow_html=True)
+            st.markdown(f"""
+                <div class="summary-card">
+                    <b>Summary:</b> Queue Agency Team screened 469 creators, successfully converting 16 high-quality partnerships with efficient resource allocation.
+                </div>
+            """, unsafe_allow_html=True)
     
-    with ct:
-        # 对齐标题
-        st.markdown("<p class='oswald-text' style='font-size:12px; color:#666; margin-bottom:24px;'><b>BUDGET STATUS</b></p>", unsafe_allow_html=True)
-        st.metric("Total Actual Spend", f"\${act_spend:,.0f}", f"of \${orig_budget:,.0f} Budget", delta_color="off")
+        with ct:
+            # 对齐标题
+            st.markdown("<p class='oswald-text' style='font-size:12px; color:#666; margin-bottom:24px;'><b>BUDGET STATUS</b></p>", unsafe_allow_html=True)
+            st.metric("Total Actual Spend", f"\${act_spend:,.0f}", f"of \${orig_budget:,.0f} Budget", delta_color="off")
         
-        usage_pct = act_spend / orig_budget
-        st.progress(usage_pct if usage_pct <= 1 else 1.0)
-        st.markdown(f"<p class='oswald-text' style='font-weight:bold;'>{usage_pct*100:.1f}% budget used</p>", unsafe_allow_html=True)
+            usage_pct = act_spend / orig_budget
+            st.progress(usage_pct if usage_pct <= 1 else 1.0)
+            st.markdown(f"<p class='oswald-text' style='font-weight:bold;'>{usage_pct*100:.1f}% budget used</p>", unsafe_allow_html=True)
 
-        # 灰色背景 Execution Audit
-        remaining_budget = orig_budget - act_spend
+            # 灰色背景 Execution Audit
+            remaining_budget = orig_budget - act_spend
+            st.markdown(f"""
+                <div class="insight-card">
+                    <p class='oswald-text' style='font-size:13px; font-weight:700; color:#1D1D1F; margin-top:0;'>BUDGET EXECUTION AUDIT</p>
+                    <p style="font-size: 14px; color: #333; line-height: 1.6; margin-bottom:0;">
+                        • <b>Execution Insight:</b> The campaign is currently <b>over-performing in budget efficiency</b>. 
+                        While we have only utilized <b>{usage_pct*100:.1f}%</b> of the budget, we have already secured <b>{view_completion_pct:.1f}%</b> of our 3,000,000 views goal.
+                        <br><br>
+                        • <b>Financial Runway:</b> With <b>\${remaining_budget:,.0f}</b> available and <b>{act_views:,.0f} / 3M</b> reach achieved, we are in a strong position to exceed targets.
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+
+        # --- 3. 动态数据处理 (保持不变) ---
+        try:
+            df_can = pd.read_csv(f"https://docs.google.com/spreadsheets/d/1ILGAE7VSm01qsQufx8Fk2hsdt3ltUJmfhyDNa4yO8b0/export?format=csv&gid=812091256")
+            df_can.columns = df_can.columns.str.strip()
+            def clean_val(x):
+                if isinstance(x, str):
+                    x = x.replace('$', '').replace(',', '').replace('%', '').strip()
+                    try: return float(x)
+                    except: return 0.0
+                return x
+            if not df_can.empty:
+                can_views = df_can['Average view'].apply(clean_val).sum()
+                can_spend = df_can['Rate'].apply(clean_val).sum()
+                can_er_avg = (df_can['Average engament'].apply(clean_val).mean() / 100) if 'Average engament' in df_can.columns else 0
+                total_views, total_spend = act_views + can_views, act_spend + can_spend
+                total_posts = act_posts + len(df_can)
+                total_eng = act_eng + (can_views * can_er_avg)
+                comb_cpm = (total_spend / total_views * 1000) if total_views > 0 else 0
+                comb_er = (total_eng / total_views) if total_views > 0 else 0
+                can_posts = len(df_can)
+        except: pass
+
+        st.divider()
+
+        # --- 4. 核心对比区 (Metrics) ---
+        st.markdown("<p class='oswald-text' style='font-size:14px; color:#1D1D1F; margin-bottom:15px;'><b>HYPOTHETICAL GROWTH (IF NOT CANCELED)</b></p>", unsafe_allow_html=True)
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Projected Reach", f"{total_views:,.0f}", f"+{can_views:,.0f}")
+        m2.metric("Projected Posts", f"{total_posts}", f"+{can_posts}")
+        m3.metric("Projected ER", f"{comb_er*100:.2f}%", f"{(comb_er-act_er)*100:+.2f}%")
+        m4.metric("Projected CPM", f"\${comb_cpm:.2f}", f"{comb_cpm-act_cpm:+.2f}", delta_color="inverse")
+
+        # --- 5. 对比表格 ---
+        comparison_df = pd.DataFrame({
+            "Metric": ["Posts", "Reach (Views)", "Overall CPM", "Total Spend"],
+            "Current Actual": [f"{act_posts}", f"{act_views:,.0f}", f"\${act_cpm:.2f}", f"\${act_spend:,.0f}"],
+            "If Not Canceled": [f"{total_posts}", f"{total_views:,.0f}", f"\${comb_cpm:.2f}", f"\${total_spend:,.0f}"]
+        })
+        st.table(comparison_df)
+
+        # --- 6. 战略结语灰色卡片 ---
+        status_label = "surpassed" if total_views >= 3000000 else "closely approached"
         st.markdown(f"""
-            <div class="insight-card">
-                <p class='oswald-text' style='font-size:13px; font-weight:700; color:#1D1D1F; margin-top:0;'>BUDGET EXECUTION AUDIT</p>
+            <div class="insight-card" style="border-left-color: #FF4B4B; background-color: #F1F3F5;">
+                <p class='oswald-text' style='font-size:13px; font-weight:700; color:#1D1D1F; margin-top:0;'>STRATEGIC PROJECTION: IF CANCELED CREATORS REMAINED</p>
                 <p style="font-size: 14px; color: #333; line-height: 1.6; margin-bottom:0;">
-                    • <b>Execution Insight:</b> The campaign is currently <b>over-performing in budget efficiency</b>. 
-                    While we have only utilized <b>{usage_pct*100:.1f}%</b> of the budget, we have already secured <b>{view_completion_pct:.1f}%</b> of our 3,000,000 views goal.
+                    <b>Strategic Insight:</b> Had the canceled creators remained in the execution plan, the campaign could have <b> {status_label}</b> the 3,000,000 views milestone.
                     <br><br>
-                    • <b>Financial Runway:</b> With <b>\${remaining_budget:,.0f}</b> available and <b>{act_views:,.0f} / 3M</b> reach achieved, we are in a strong position to exceed targets.
+                    <b>Cost-Efficiency Balance:</b> Even with the added cost of these creators, the total projected spend (<b>\${total_spend:,.0f}</b>) would still sit comfortably within the original <b>\${orig_budget:,.0f}</b> budget, proving that the full-scale strategy was the most viable path to fulfilling the 3M reach KPI.
                 </p>
             </div>
         """, unsafe_allow_html=True)
-
-    # --- 3. 动态数据处理 (保持不变) ---
-    try:
-        df_can = pd.read_csv(f"https://docs.google.com/spreadsheets/d/1ILGAE7VSm01qsQufx8Fk2hsdt3ltUJmfhyDNa4yO8b0/export?format=csv&gid=812091256")
-        df_can.columns = df_can.columns.str.strip()
-        def clean_val(x):
-            if isinstance(x, str):
-                x = x.replace('$', '').replace(',', '').replace('%', '').strip()
-                try: return float(x)
-                except: return 0.0
-            return x
-        if not df_can.empty:
-            can_views = df_can['Average view'].apply(clean_val).sum()
-            can_spend = df_can['Rate'].apply(clean_val).sum()
-            can_er_avg = (df_can['Average engament'].apply(clean_val).mean() / 100) if 'Average engament' in df_can.columns else 0
-            total_views, total_spend = act_views + can_views, act_spend + can_spend
-            total_posts = act_posts + len(df_can)
-            total_eng = act_eng + (can_views * can_er_avg)
-            comb_cpm = (total_spend / total_views * 1000) if total_views > 0 else 0
-            comb_er = (total_eng / total_views) if total_views > 0 else 0
-            can_posts = len(df_can)
-    except: pass
-
-    st.divider()
-
-    # --- 4. 核心对比区 (Metrics) ---
-    st.markdown("<p class='oswald-text' style='font-size:14px; color:#1D1D1F; margin-bottom:15px;'><b>HYPOTHETICAL GROWTH (IF NOT CANCELED)</b></p>", unsafe_allow_html=True)
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Projected Reach", f"{total_views:,.0f}", f"+{can_views:,.0f}")
-    m2.metric("Projected Posts", f"{total_posts}", f"+{can_posts}")
-    m3.metric("Projected ER", f"{comb_er*100:.2f}%", f"{(comb_er-act_er)*100:+.2f}%")
-    m4.metric("Projected CPM", f"\${comb_cpm:.2f}", f"{comb_cpm-act_cpm:+.2f}", delta_color="inverse")
-
-    # --- 5. 对比表格 ---
-    comparison_df = pd.DataFrame({
-        "Metric": ["Posts", "Reach (Views)", "Overall CPM", "Total Spend"],
-        "Current Actual": [f"{act_posts}", f"{act_views:,.0f}", f"\${act_cpm:.2f}", f"\${act_spend:,.0f}"],
-        "If Not Canceled": [f"{total_posts}", f"{total_views:,.0f}", f"\${comb_cpm:.2f}", f"\${total_spend:,.0f}"]
-    })
-    st.table(comparison_df)
-
-    # --- 6. 战略结语灰色卡片 ---
-    status_label = "surpassed" if total_views >= 3000000 else "closely approached"
-    st.markdown(f"""
-        <div class="insight-card" style="border-left-color: #FF4B4B; background-color: #F1F3F5;">
-            <p class='oswald-text' style='font-size:13px; font-weight:700; color:#1D1D1F; margin-top:0;'>STRATEGIC PROJECTION: IF CANCELED CREATORS REMAINED</p>
-            <p style="font-size: 14px; color: #333; line-height: 1.6; margin-bottom:0;">
-                <b>Strategic Insight:</b> Had the canceled creators remained in the execution plan, the campaign could have <b> {status_label}</b> the 3,000,000 views milestone.
-                <br><br>
-                <b>Cost-Efficiency Balance:</b> Even with the added cost of these creators, the total projected spend (<b>\${total_spend:,.0f}</b>) would still sit comfortably within the original <b>\${orig_budget:,.0f}</b> budget, proving that the full-scale strategy was the most viable path to fulfilling the 3M reach KPI.
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
 if os.path.exists("Queue Logo.png"):
             with open("Queue Logo.png", "rb") as f: enc = base64.b64encode(f.read()).decode()
             st.markdown(f'<img src="data:image/png;base64,{enc}" class="logo-watermark">', unsafe_allow_html=True)

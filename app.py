@@ -667,6 +667,7 @@ if check_password():
                 </p>
             </div>
         """, unsafe_allow_html=True)
+        
 if os.path.exists("Queue Logo.png"):
             with open("Queue Logo.png", "rb") as f: enc = base64.b64encode(f.read()).decode()
             st.markdown(f'<img src="data:image/png;base64,{enc}" class="logo-watermark">', unsafe_allow_html=True)

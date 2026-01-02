@@ -590,7 +590,7 @@ if check_password():
         with ct:
             # 对齐标题
             st.markdown("<p class='oswald-text' style='font-size:12px; color:#666; margin-bottom:24px;'><b>BUDGET STATUS</b></p>", unsafe_allow_html=True)
-            st.metric("Total Actual Spend", f"\${act_spend:,.0f}", f"of \${orig_budget:,.0f} Budget", delta_color="off")
+            st.metric("Total Actual Spend", f"${act_spend:,.0f}", f"of ${orig_budget:,.0f} Budget", delta_color="off")
         
             usage_pct = act_spend / orig_budget
             st.progress(usage_pct if usage_pct <= 1 else 1.0)
@@ -605,13 +605,14 @@ if check_password():
                         • <b>Execution Insight:</b> The campaign is currently <b>over-performing in budget efficiency</b>. 
                         While we have only utilized <b>{usage_pct*100:.1f}%</b> of the budget, we have already secured <b>{view_completion_pct:.1f}%</b> of our 3,000,000 views goal.
                         <br><br>
-                        • <b>Financial Runway:</b> With <b>\${remaining_budget:,.0f}</b> available and <b>{act_views:,.0f} / 3M</b> reach achieved, we are in a strong position to exceed targets.
+                        • <b>Financial Runway:</b> With <b>${remaining_budget:,.0f}</b> available and <b>{act_views:,.0f} / 3M</b> reach achieved, we are in a strong position to exceed targets.
                     </p>
                 </div>
             """, unsafe_allow_html=True)
 
-        # --- 3. 动态数据处理 (保持不变) ---
+        # --- 3. 动态数据处理 ---
         try:
+            # 尝试获取被取消博主的数据进行对比分析
             df_can = pd.read_csv(f"https://docs.google.com/spreadsheets/d/1ILGAE7VSm01qsQufx8Fk2hsdt3ltUJmfhyDNa4yO8b0/export?format=csv&gid=812091256")
             df_can.columns = df_can.columns.str.strip()
             def clean_val(x):
@@ -623,14 +624,18 @@ if check_password():
             if not df_can.empty:
                 can_views = df_can['Average view'].apply(clean_val).sum()
                 can_spend = df_can['Rate'].apply(clean_val).sum()
-                can_er_avg = (df_can['Average engament'].apply(clean_val).mean() / 100) if 'Average engament' in df_can.columns else 0
+                # 如果有互动率列则计算均值
+                er_col = 'Average engament' if 'Average engament' in df_can.columns else None
+                can_er_avg = (df_can[er_col].apply(clean_val).mean() / 100) if er_col else 0
+                
                 total_views, total_spend = act_views + can_views, act_spend + can_spend
                 total_posts = act_posts + len(df_can)
                 total_eng = act_eng + (can_views * can_er_avg)
                 comb_cpm = (total_spend / total_views * 1000) if total_views > 0 else 0
                 comb_er = (total_eng / total_views) if total_views > 0 else 0
                 can_posts = len(df_can)
-        except: pass
+        except Exception as e:
+            pass
 
         st.divider()
 
@@ -640,13 +645,13 @@ if check_password():
         m1.metric("Projected Reach", f"{total_views:,.0f}", f"+{can_views:,.0f}")
         m2.metric("Projected Posts", f"{total_posts}", f"+{can_posts}")
         m3.metric("Projected ER", f"{comb_er*100:.2f}%", f"{(comb_er-act_er)*100:+.2f}%")
-        m4.metric("Projected CPM", f"\${comb_cpm:.2f}", f"{comb_cpm-act_cpm:+.2f}", delta_color="inverse")
+        m4.metric("Projected CPM", f"${comb_cpm:.2f}", f"{comb_cpm-act_cpm:+.2f}", delta_color="inverse")
 
         # --- 5. 对比表格 ---
         comparison_df = pd.DataFrame({
             "Metric": ["Posts", "Reach (Views)", "Overall CPM", "Total Spend"],
-            "Current Actual": [f"{act_posts}", f"{act_views:,.0f}", f"\${act_cpm:.2f}", f"\${act_spend:,.0f}"],
-            "If Not Canceled": [f"{total_posts}", f"{total_views:,.0f}", f"\${comb_cpm:.2f}", f"\${total_spend:,.0f}"]
+            "Current Actual": [f"{act_posts}", f"{act_views:,.0f}", f"${act_cpm:.2f}", f"${act_spend:,.0f}"],
+            "If Not Canceled": [f"{total_posts}", f"{total_views:,.0f}", f"${comb_cpm:.2f}", f"${total_spend:,.0f}"]
         })
         st.table(comparison_df)
 
@@ -658,7 +663,7 @@ if check_password():
                 <p style="font-size: 14px; color: #333; line-height: 1.6; margin-bottom:0;">
                     <b>Strategic Insight:</b> Had the canceled creators remained in the execution plan, the campaign could have <b> {status_label}</b> the 3,000,000 views milestone.
                     <br><br>
-                    <b>Cost-Efficiency Balance:</b> Even with the added cost of these creators, the total projected spend (<b>\${total_spend:,.0f}</b>) would still sit comfortably within the original <b>\${orig_budget:,.0f}</b> budget, proving that the full-scale strategy was the most viable path to fulfilling the 3M reach KPI.
+                    <b>Cost-Efficiency Balance:</b> Even with the added cost of these creators, the total projected spend (<b>${total_spend:,.0f}</b>) would still sit comfortably within the original <b>${orig_budget:,.0f}</b> budget, proving that the full-scale strategy was the most viable path to fulfilling the 3M reach KPI.
                 </p>
             </div>
         """, unsafe_allow_html=True)
